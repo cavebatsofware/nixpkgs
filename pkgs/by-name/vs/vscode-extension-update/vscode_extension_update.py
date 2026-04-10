@@ -55,6 +55,7 @@ class VSCodeExtensionUpdater:
         if not self.attribute_path:
             logger.error("Error: Attribute path is required.")
             sys.exit(1)
+        self._has_platform_source_cache: Optional[bool] = None
         self.target_vscode_version = self._get_nix_vscode_version()
         self.current_version = self._get_nix_vscode_extension_version()
         self.override_filename = self.args.override_filename
@@ -142,8 +143,10 @@ class VSCodeExtensionUpdater:
         return ([system] if system is not None else []) + extra_platforms
 
     def _has_platform_source(self) -> bool:
-        source_url = self._get_nix_attribute(f"{self.attribute_path}.src.url")
-        return "targetPlatform=" in source_url
+        if self._has_platform_source_cache is None:
+            source_url = self._get_nix_attribute(f"{self.attribute_path}.src.url")
+            self._has_platform_source_cache = "targetPlatform=" in source_url
+        return self._has_platform_source_cache
 
     def _prefetch_url_sri(self, url: str) -> str:
         """
@@ -373,47 +376,11 @@ class VSCodeExtensionUpdater:
         )
         Path(self.override_filename).write_text(updated_content, encoding="utf-8")
 
-    def update_signature_hash(self, signature_hash: str) -> None:
+    def _find_block_end(self, content: str, brace_start: int) -> Optional[int]:
         """
-        Adds or updates signatureHash in the mktplcRef block for this extension.
-        Handles both inline extensions in default.nix and standalone extension files.
+        Given the position of an opening '{', find the matching closing '}'.
+        Returns the index of the closing brace, or None on mismatch.
         """
-        if not self.override_filename:
-            logger.warning("No override filename set, cannot update signature hash")
-            return
-
-        content = Path(self.override_filename).read_text(encoding="utf-8")
-        target_name = self.attribute_path.removeprefix("vscode-extensions.")
-
-        # Try to find the extension block by name (inline in default.nix)
-        pattern = re.compile(
-            rf"{re.escape(target_name)}\s*=\s*buildVscodeMarketplaceExtension\s*\{{",
-            re.MULTILINE,
-        )
-        ext_match = pattern.search(content)
-        search_start = ext_match.end() if ext_match else 0
-
-        # If not found as inline, the file is likely a standalone extension file
-        # In that case, search from the beginning for mktplcRef
-        if not ext_match:
-            # Verify this looks like a standalone extension file
-            standalone_pattern = re.compile(
-                r'(vscode-utils\.)?buildVscodeMarketplaceExtension\s*\{',
-                re.MULTILINE,
-            )
-            if not standalone_pattern.search(content):
-                logger.warning(f"Could not find extension block for {target_name}")
-                return
-
-        # Find the mktplcRef block
-        mktplc_pattern = re.compile(r'mktplcRef\s*=\s*\{', re.MULTILINE)
-        mktplc_match = mktplc_pattern.search(content, search_start)
-        if not mktplc_match:
-            logger.warning("Could not find mktplcRef block")
-            return
-
-        # Find the end of mktplcRef block
-        brace_start = mktplc_match.end() - 1
         count = 0
         pos = brace_start
         while pos < len(content):
@@ -422,43 +389,87 @@ class VSCodeExtensionUpdater:
             elif content[pos] == "}":
                 count -= 1
                 if count == 0:
-                    break
+                    return pos
             pos += 1
+        return None
 
-        if count != 0:
-            logger.warning("Braces mismatch in mktplcRef block")
-            return
+    def _insert_signature_hash_in_block(
+        self, content: str, block_start_pattern: re.Pattern, signature_hash: str
+    ) -> Optional[str]:
+        """
+        Finds a block matching `block_start_pattern` in `content` and inserts or
+        updates its `signatureHash` field. Returns the updated content, or None
+        if the block or its hash line could not be located.
+        """
+        block_match = block_start_pattern.search(content)
+        if not block_match:
+            return None
 
-        block_end = pos
+        brace_start = content.rfind("{", 0, block_match.end())
+        if brace_start == -1:
+            return None
+        block_end = self._find_block_end(content, brace_start)
+        if block_end is None:
+            return None
+
         block_text = content[brace_start:block_end + 1]
 
-        # Check if signatureHash already exists
         sig_pattern = re.compile(r'(\s*)(signatureHash\s*=\s*")([^"]+)(";)')
-        sig_match = sig_pattern.search(block_text)
-
-        if sig_match:
-            # Update existing signatureHash
+        if sig_pattern.search(block_text):
             new_block_text = sig_pattern.sub(
-                rf'\g<1>signatureHash = "{signature_hash}";',
-                block_text
+                rf'\g<1>signatureHash = "{signature_hash}";', block_text
             )
-            logger.info(f"Updated existing signatureHash")
+            logger.info("Updated existing signatureHash")
         else:
-            # Find the hash line to insert after
             hash_pattern = re.compile(r'([ \t]*)(hash|sha256)\s*=\s*"[^"]+";')
             hash_match = hash_pattern.search(block_text)
-            if hash_match:
-                indent = hash_match.group(1)
-                insert_pos = hash_match.end()
-                new_line = f'\n{indent}signatureHash = "{signature_hash}";'
-                new_block_text = block_text[:insert_pos] + new_line + block_text[insert_pos:]
-                logger.info(f"Added signatureHash after hash line")
-            else:
-                logger.warning("Could not find hash line in mktplcRef block")
-                return
+            if not hash_match:
+                return None
+            indent = hash_match.group(1)
+            insert_pos = hash_match.end()
+            new_line = f'\n{indent}signatureHash = "{signature_hash}";'
+            new_block_text = (
+                block_text[:insert_pos] + new_line + block_text[insert_pos:]
+            )
+            logger.info("Added signatureHash after hash line")
 
-        updated_content = content[:brace_start] + new_block_text + content[block_end + 1:]
-        Path(self.override_filename).write_text(updated_content, encoding="utf-8")
+        return content[:brace_start] + new_block_text + content[block_end + 1:]
+
+    def update_signature_hash(
+        self, signature_hash: str, nix_system: Optional[str] = None
+    ) -> bool:
+        """
+        Adds or updates signatureHash in the extension's definition. If `nix_system`
+        is given, targets the per-system block (e.g. `x86_64-linux = { ... };`) used
+        by multi-platform extensions. Otherwise, targets the `mktplcRef = { ... }`
+        block used by single-platform extensions.
+
+        Returns True on success, False otherwise.
+        """
+        if not self.override_filename:
+            logger.warning("No override filename set, cannot update signature hash")
+            return False
+
+        content = Path(self.override_filename).read_text(encoding="utf-8")
+
+        if nix_system is not None:
+            block_pattern = re.compile(
+                rf"{re.escape(nix_system)}\s*=\s*\{{", re.MULTILINE
+            )
+            description = f"per-system block '{nix_system}'"
+        else:
+            block_pattern = re.compile(r'mktplcRef\s*=\s*\{', re.MULTILINE)
+            description = "mktplcRef block"
+
+        updated = self._insert_signature_hash_in_block(
+            content, block_pattern, signature_hash
+        )
+        if updated is None:
+            logger.warning(f"Could not update signatureHash in {description}")
+            return False
+
+        Path(self.override_filename).write_text(updated, encoding="utf-8")
+        return True
 
     def run_nix_update(self, new_version: str, system: str) -> None:
         """
@@ -533,15 +544,8 @@ class VSCodeExtensionUpdater:
             available_versions,
             self.get_target_platform(self.nix_vscode_extension_platforms[0]),
         )
-        try:
-            self.execute_command([
-                "semver",
-                self.current_version,
-                "-r",
-                f"<{self.new_version}",
-            ])
-        except subprocess.CalledProcessError:
-            if not Version.parse(self.current_version).match(f"<{self.new_version}"):
+        if not Version.parse(self.current_version).match(f"<{self.new_version}"):
+            if not self.force:
                 logger.info("Already up to date or new version is older!")
                 sys.exit(0)
             logger.info(f"Force mode: re-fetching even though version unchanged ({self.current_version})")
@@ -551,15 +555,26 @@ class VSCodeExtensionUpdater:
         # Fetch and add signature hash if requested
         if self.with_signature:
             logger.info("Fetching signature hash...")
-            # Use the first platform's target platform if extension is platform-specific
-            target_platform = None
             if self._has_platform_source():
-                target_platform = self.get_target_platform(self.nix_vscode_extension_platforms[0])
-            signature_hash = self._fetch_signature_hash(self.new_version, target_platform)
-            if signature_hash:
-                self.update_signature_hash(signature_hash)
+                # Multi-platform: fetch and update a signatureHash for each platform.
+                for system in self.nix_vscode_extension_platforms:
+                    target_platform = self.get_target_platform(system)
+                    signature_hash = self._fetch_signature_hash(
+                        self.new_version, target_platform
+                    )
+                    if signature_hash:
+                        self.update_signature_hash(signature_hash, nix_system=system)
+                    else:
+                        logger.warning(
+                            f"Could not fetch signature hash for {system}, skipping"
+                        )
             else:
-                logger.warning("Could not fetch signature hash, skipping")
+                # Single-platform: fetch once and update the mktplcRef block.
+                signature_hash = self._fetch_signature_hash(self.new_version)
+                if signature_hash:
+                    self.update_signature_hash(signature_hash)
+                else:
+                    logger.warning("Could not fetch signature hash, skipping")
         if self.commit:
             self.execute_command(["git", "add", self.override_filename])
             self.execute_command([
