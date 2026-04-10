@@ -13,7 +13,6 @@
   rocm-device-libs,
   rocm-comgr,
   rocm-runtime,
-  rocm-toolchain,
   rocm-core,
   roctracer,
   rocminfo,
@@ -25,7 +24,7 @@
   zlib,
   libGL,
   libxml2,
-  libX11,
+  libx11,
   python3Packages,
   llvm,
   khronos-ocl-icd-loader,
@@ -70,7 +69,7 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "clr";
-  version = "7.0.2";
+  version = "7.2.1";
 
   outputs = [
     "out"
@@ -82,10 +81,15 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchFromGitHub {
     owner = "ROCm";
-    repo = "clr";
+    repo = "rocm-systems";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-zajb/iTtF/ECRScdcQ85HPgq8DdIGqSinJoVyyi89bw=";
+    sparseCheckout = [
+      "projects/clr"
+      "shared"
+    ];
+    hash = "sha256-8V2WbyaJZbEcKZpF/xvg0p+3oX9f/zy/45rkKZT9R3o=";
   };
+  sourceRoot = "${finalAttrs.src.name}/projects/clr";
 
   nativeBuildInputs = [
     makeWrapper
@@ -102,7 +106,7 @@ stdenv.mkDerivation (finalAttrs: {
     numactl
     libGL
     libxml2
-    libX11
+    libx11
     khronos-ocl-icd-loader
     hipClang
     libffi
@@ -147,14 +151,10 @@ stdenv.mkDerivation (finalAttrs: {
   patches = [
     ./cmake-find-x11-libgl.patch
     (fetchpatch {
-      # [PATCH] improve rocclr isa compatibility check
-      sha256 = "sha256-/QpB3Wqdhcq6lzyO/zOWzwQC0oYpesCICxnVx5CqbWg=";
-      url = "https://github.com/GZGavinZhao/clr/commit/733ee38ef8ad5c84926970981821f446dfcb00af.patch";
-    })
-    (fetchpatch {
-      # [PATCH] improve hipamd isa compatibility check
-      sha256 = "sha256-FvZInw8PqB68ePxAGu45cWT/whD1xmprIA5wZb5OLcE=";
-      url = "https://github.com/GZGavinZhao/clr/commit/1f0b54ee9b0de08f4dc8cd38b6728928b180048a.patch";
+      # [PATCH] rocclr: Extend HIP ISA compatibility checks
+      hash = "sha256-3MsDL+OQg24wH1RDhbao74RuIbzEAmduwla9KOPzQ/M=";
+      url = "https://github.com/GZGavinZhao/rocm-systems/commit/039cb23b24d739adb8c0f9de8b550d9f557de031.patch";
+      relative = "projects/clr";
     })
   ];
 
@@ -174,10 +174,6 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace opencl/khronos/icd/loader/icd_platform.h \
       --replace-fail '#define ICD_VENDOR_PATH "/etc/OpenCL/vendors/";' \
                      '#define ICD_VENDOR_PATH "/run/opengl-driver/etc/OpenCL/vendors/";'
-
-    # new unbundler has better error messages, defaulting it on
-    substituteInPlace rocclr/utils/flags.hpp \
-      --replace-fail "HIP_ALWAYS_USE_NEW_COMGR_UNBUNDLING_ACTION, false" "HIP_ALWAYS_USE_NEW_COMGR_UNBUNDLING_ACTION, true"
   '';
 
   postInstall = ''
@@ -215,6 +211,15 @@ stdenv.mkDerivation (finalAttrs: {
     ln -s ${hipClang} $out/llvm
   '';
 
+  # libamdhip64.so dlopens its own bare name for hipGetProcAddress symbol resolution,
+  # same pattern with libhiprtc.so, so add own lib directory to all .so's
+  # RPATHs so they can find themselves and neighbouring libs
+  # Must be in postFixup so it runs after patchelf --shrink-rpath which removes
+  # the apparently useless rpath
+  postFixup = ''
+    patchelf --add-rpath "$out/lib" "$out"/lib/*.so
+  '';
+
   disallowedRequisites = [
     gcc-unwrapped
   ];
@@ -245,7 +250,7 @@ stdenv.mkDerivation (finalAttrs: {
       "1100"
       "1101"
       "1102"
-      # 7.x "1150"
+      "1150" # Strix Point
       "1151" # Strix Halo
       # "12-generic"
       "1200" # RX 9060
@@ -254,19 +259,16 @@ stdenv.mkDerivation (finalAttrs: {
 
     inherit hipClangPath;
 
-    updateScript = rocmUpdateScript {
-      name = finalAttrs.pname;
-      inherit (finalAttrs.src) owner;
-      inherit (finalAttrs.src) repo;
-      page = "tags?per_page=4";
-    };
+    updateScript = rocmUpdateScript { inherit finalAttrs; };
 
     impureTests = {
+      # bash $(nix-build -A rocmPackages.clr.impureTests.rocm-smi)
       rocm-smi = callPackage ./test-rocm-smi.nix {
         inherit rocm-smi;
         clr = finalAttrs.finalPackage;
       };
-      opencl-example = callPackage ./test-opencl-example.nix {
+      # Simple subset of opencl-cts test_basic
+      opencl-cts = callPackage ./test-opencl-cts.nix {
         clr = finalAttrs.finalPackage;
       };
       generic-arch = callPackage ./test-isa-compat.nix {
@@ -296,6 +298,10 @@ stdenv.mkDerivation (finalAttrs: {
           "amdgcnspirv"
         ];
       };
+      hiprtc-type-traits = callPackage ./test-hiprtc-type-traits.nix {
+        clr = finalAttrs.finalPackage;
+        inherit rocm-smi;
+      };
     };
 
     selectGpuTargets =
@@ -317,7 +323,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   meta = {
     description = "AMD Common Language Runtime for hipamd, opencl, and rocclr";
-    homepage = "https://github.com/ROCm/clr";
+    homepage = "https://github.com/ROCm/rocm-systems/tree/develop/projects/clr";
     license = with lib.licenses; [ mit ];
     maintainers = with lib.maintainers; [ lovesegfault ];
     teams = [ lib.teams.rocm ];

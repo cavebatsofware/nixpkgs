@@ -50,7 +50,6 @@ sets are
 
 * `pkgs.python27Packages`
 * `pkgs.python3Packages`
-* `pkgs.python310Packages`
 * `pkgs.python311Packages`
 * `pkgs.python312Packages`
 * `pkgs.python313Packages`
@@ -551,6 +550,7 @@ are used in [`buildPythonPackage`](#buildpythonpackage-function).
 - `pythonRemoveBinBytecode` to remove bytecode from the `/bin` folder.
 - `setuptoolsBuildHook` to build a wheel using `setuptools`.
 - `sphinxHook` to build documentation and manpages using Sphinx.
+- `stestrCheckHook` to run tests with `stestr`.
 - `venvShellHook` to source a Python 3 `venv` at the `venvDir` location. A
   `venv` is created if it does not yet exist. `postVenvCreation` can be used to
   to run commands only after venv is first created.
@@ -897,7 +897,7 @@ on NixOS.
   # ...
 
   environment.systemPackages = with pkgs; [
-    (python310.withPackages (
+    (python314.withPackages (
       ps: with ps; [
         numpy
         toolz
@@ -1043,57 +1043,57 @@ Our example, `toolz`, does not have any dependencies on other Python packages or
 Dependencies can belong to multiple arguments, for example if something is both a build time requirement & a runtime dependency.
 
 The following example shows which arguments are given to [`buildPythonPackage`](#buildpythonpackage-function) in
-order to build [`datashape`](https://github.com/blaze/datashape).
+order to build [`dirigera`](https://github.com/Leggin/dirigera).
 
 ```nix
 {
   lib,
   buildPythonPackage,
-  fetchPypi,
-
-  # build dependencies
-  setuptools,
-
-  # dependencies
-  numpy,
-  multipledispatch,
-  python-dateutil,
-
-  # tests
+  fetchFromGitHub,
+  pydantic,
   pytestCheckHook,
+  requests,
+  setuptools,
+  websocket-client,
 }:
 
 buildPythonPackage (finalAttrs: {
-  pname = "datashape";
-  version = "0.4.7";
+  pname = "dirigera";
+  version = "1.2.6";
   pyproject = true;
 
-  src = fetchPypi {
-    inherit (finalAttrs) pname version;
-    hash = "sha256-FLLvdm1MllKrgTGC6Gb0k0deZeVYvtCCLji/B7uhong=";
+  src = fetchFromGitHub {
+    owner = "Leggin";
+    repo = "dirigera";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-5pfzmaIkIEtxDtkhG1lOLSTjWahEDgQKLJKbAG5rBjE=";
   };
 
   build-system = [ setuptools ];
 
   dependencies = [
-    multipledispatch
-    numpy
-    python-dateutil
+    pydantic
+    requests
+    websocket-client
   ];
 
   nativeCheckInputs = [ pytestCheckHook ];
 
+  pythonImportsCheck = [ "dirigera" ];
+
   meta = {
-    changelog = "https://github.com/blaze/datashape/releases/tag/${finalAttrs.version}";
-    homepage = "https://github.com/ContinuumIO/datashape";
-    description = "Data description language";
-    license = lib.licenses.bsd2;
+    description = "Module for controlling the IKEA Dirigera Smart Home Hub";
+    homepage = "https://github.com/Leggin/dirigera";
+    changelog = "https://github.com/Leggin/dirigera/releases/tag/${finalAttrs.src.tag}";
+    license = lib.licenses.mit;
+    maintainers = with lib.maintainers; [ fab ];
+    mainProgram = "generate-token";
   };
 })
 ```
 
-We can see several runtime dependencies, `numpy`, `multipledispatch`, and
-`python-dateutil`. Furthermore, we have [`nativeCheckInputs`](#var-stdenv-nativeCheckInputs) with `pytestCheckHook`.
+We can see several runtime dependencies, `pydantic`, `requests`, and
+`websocket-client`. Furthermore, we have [`nativeCheckInputs`](#var-stdenv-nativeCheckInputs) with `pytestCheckHook`.
 `pytestCheckHook` is a test runner hook and is only used during the [`checkPhase`](#ssec-check-phase) and is
 therefore not added to `dependencies`.
 
@@ -1683,7 +1683,7 @@ with import <nixpkgs> { };
           });
         };
       in
-      pkgs.python310.override { inherit packageOverrides; };
+      pkgs.python313.override { inherit packageOverrides; };
 
   in
   python.withPackages (ps: [ ps.pandas ])
@@ -1707,7 +1707,7 @@ with import <nixpkgs> { };
   let
     packageOverrides = self: super: { scipy = super.scipy_0_17; };
   in
-  (pkgs.python310.override { inherit packageOverrides; }).withPackages (ps: [ ps.blaze ])
+  (pkgs.python313.override { inherit packageOverrides; }).withPackages (ps: [ ps.blaze ])
 ).env
 ```
 
@@ -1723,13 +1723,13 @@ let
   newpkgs = import pkgs.path {
     overlays = [
       (self: super: {
-        python310 =
+        python313 =
           let
             packageOverrides = python-self: python-super: {
               numpy = python-super.numpy_1_18;
             };
           in
-          super.python310.override { inherit packageOverrides; };
+          super.python313.override { inherit packageOverrides; };
       })
     ];
   };
@@ -2136,7 +2136,7 @@ The following rules are desired to be respected:
 * `pythonImportsCheck` is set. This is still a good smoke test even if `pytestCheckHook` is set.
 * `meta.platforms` takes the default value in many cases.
   It does not need to be set explicitly unless the package requires a specific platform.
-* The file is formatted with `nixfmt-rfc-style`.
+* The file is formatted correctly (e.g., `nix-shell --run treefmt`).
 * Commit names of Python libraries must reflect that they are Python
   libraries (e.g. `python3Packages.numpy: 1.11 -> 1.12` rather than `numpy: 1.11 -> 1.12`).
   See also [`pkgs/README.md`](https://github.com/NixOS/nixpkgs/blob/master/pkgs/README.md#commit-conventions).

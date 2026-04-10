@@ -2,30 +2,31 @@
   lib,
   rustPlatform,
   fetchFromGitHub,
+  gzip,
+  makeBinaryWrapper,
   pkg-config,
   openssl,
-  gzip,
   gitMinimal,
-  deno,
   nix-update-script,
   versionCheckHook,
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "fresh";
-  version = "0.1.86";
+  version = "0.2.21";
 
   src = fetchFromGitHub {
     owner = "sinelaw";
     repo = "fresh";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-o67oowSU1V9Cy2RvLEaZ5J3CPX2kD7qByDOc+8gpDq8=";
+    hash = "sha256-du5YCDPqrGsbajT676Zs2oPvJPPAFseTkd3bXNNg64M=";
   };
 
-  cargoHash = "sha256-I78sdf/p5TZZufMZF8rETRb91veklwNHHByHF1WbLgk=";
+  cargoHash = "sha256-UDbW8R8XNbif+beReQsCrCqtpUw8DhDMIAlZBKqUWaQ=";
 
   nativeBuildInputs = [
-    pkg-config
     gzip
+    makeBinaryWrapper
+    pkg-config
   ];
 
   nativeCheckInputs = [
@@ -37,15 +38,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     openssl
   ];
 
-  # The v8 package will try to download a `librusty_v8.a` release at build time to our read-only filesystem
-  # To avoid this we pre-download the file and export it via RUSTY_V8_ARCHIVE
-  env.RUSTY_V8_ARCHIVE = deno.librusty_v8;
-
   preBuild = ''
     mkdir -p $out/share/fresh-editor/plugins/
   '';
 
   postInstall = ''
+    wrapProgram $out/bin/${finalAttrs.meta.mainProgram} \
+      --add-flags "--no-upgrade-check"
     rm -rf $out/bin/fresh.dSYM
   '';
 
@@ -81,7 +80,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
     sourceProvenance = with lib.sourceTypes; [
       fromSource
-      binaryNativeCode # librusty_v8.a
     ];
   };
 })

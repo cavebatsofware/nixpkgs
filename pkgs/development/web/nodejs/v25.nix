@@ -6,7 +6,6 @@
   fetchpatch2,
   openssl,
   python3,
-  enableNpm ? true,
 }:
 
 let
@@ -24,9 +23,8 @@ let
       [ ];
 in
 buildNodejs {
-  inherit enableNpm;
-  version = "25.4.0";
-  sha256 = "04e365aadcd7bf4cf1a6001723ea41035bfb118d78f8a8ee2054b37fc5cb67d6";
+  version = "25.9.0";
+  sha256 = "8f78af3ee55fb278668b5f801db58bd1a38ea161318eb5ce2128ddbc9cd813aa";
   patches =
     (
       if (stdenv.hostPlatform.emulatorAvailable buildPackages) then

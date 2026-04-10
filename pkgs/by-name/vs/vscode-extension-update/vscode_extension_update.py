@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i python3 -p nix python3 python3Packages.loguru nodePackages.semver vsce nix-update gitMinimal coreutils common-updater-scripts
+#! nix-shell -i python3 -p nix python3 python3Packages.loguru python3Packages.semver vsce nix-update gitMinimal coreutils common-updater-scripts
 
 import argparse
 import json
@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from loguru import logger
+from semver.version import Version
 
 
 class VSCodeExtensionUpdater:
@@ -312,16 +313,12 @@ class VSCodeExtensionUpdater:
                 engine_version_constraint = self.replace_version_symbol(
                     engine_version_constraint
                 )
-                try:
-                    self.execute_command([
-                        "semver",
-                        self.target_vscode_version,
-                        "-r",
-                        engine_version_constraint,
-                    ])
+                if Version.parse(self.target_vscode_version).match(
+                    engine_version_constraint
+                ):
                     logger.info(f"Compatible version found: {candidate_version}")
                     return candidate_version
-                except (ValueError, subprocess.CalledProcessError):
+                else:
                     logger.debug(
                         f"Version {candidate_version} is not compatible with VSCode {self.target_vscode_version} (constraint: {engine_version_constraint})."
                     )
@@ -544,7 +541,7 @@ class VSCodeExtensionUpdater:
                 f"<{self.new_version}",
             ])
         except subprocess.CalledProcessError:
-            if not self.force:
+            if not Version.parse(self.current_version).match(f"<{self.new_version}"):
                 logger.info("Already up to date or new version is older!")
                 sys.exit(0)
             logger.info(f"Force mode: re-fetching even though version unchanged ({self.current_version})")

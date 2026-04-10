@@ -10,18 +10,18 @@
 let
   inherit (stdenv.hostPlatform) isLinux;
 in
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "lockbook";
-  version = "26.1.13";
+  version = "26.4.8";
 
   src = fetchFromGitHub {
     owner = "lockbook";
     repo = "lockbook";
-    tag = version;
-    hash = "sha256-1+56xdfrRpjhb536vC8kwZ+fyGpQ38wPH7clkApIOUs=";
+    tag = finalAttrs.version;
+    hash = "sha256-dz4jloG7B/qgtYxDQki8aZiEa+fwvPrzuC9oNoObZR0=";
   };
 
-  cargoHash = "sha256-JCWBG8jt8IxMaUfZaC+YnDfYSmpH/Jm1sqvEcHI8aA0=";
+  cargoHash = "sha256-ZzKNcBWq4RnCiRY69BlCt9GFPDiSk+PxjcoTyTrLJtw=";
 
   doCheck = false; # there are no cli tests
   cargoBuildFlags = [
@@ -60,4 +60,4 @@ rustPlatform.buildRustPackage rec {
     changelog = "https://github.com/lockbook/lockbook/releases";
     maintainers = [ lib.maintainers.parth ];
   };
-}
+})

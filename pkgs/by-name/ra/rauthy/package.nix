@@ -11,21 +11,22 @@
   wasm-bindgen-cli_0_2_108,
   binaryen,
   lld,
+  rust-jemalloc-sys-unprefixed,
 }:
 let
-  version = "0.34.0";
+  version = "0.34.3";
   pname = "rauthy";
 
   src = fetchFromGitHub {
     owner = "sebadob";
     repo = "rauthy";
     tag = "v${version}";
-    hash = "sha256-ZYugnemiZpa8gmXCRgZc/9att/vUribC1+vpS7vhgl8=";
+    hash = "sha256-ey6y/EGmz/80s0nbxsk6li9KCJV5IAtBp5QqAj7a6R0=";
   };
 
   cargoDeps = rustPlatform.fetchCargoVendor {
     inherit src pname version;
-    hash = "sha256-ixl4mlQJw8Gr7Rrnm8B2Iz8xI7IAne8OR9Dri0k3kqY=";
+    hash = "sha256-mkIHup/6aA9QDPlekhdZiXWryhetsJMxl3HAXsabACQ=";
   };
 
   # Wasm modules are needed to build the frontend and are part of the main Rust repo.
@@ -77,7 +78,7 @@ let
       "-p2"
     ];
 
-    npmDepsHash = "sha256-F8/zbqI7Nmm8GLtkL25QDX222yzhlg7NA32tpBa8b5o=";
+    npmDepsHash = "sha256-N/tFwQNWMudFtetIKfirXDvWH3CfRwjdpBcxkXZsVig=";
 
     preBuild = ''
       mkdir -p ./src/wasm/
@@ -97,6 +98,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     pkg-config
     perl
   ];
+
+  buildInputs = [ rust-jemalloc-sys-unprefixed ];
 
   preBuild = ''
     cp -r ${frontend}/lib/node_modules/frontend/dist/templates/html/ templates/html

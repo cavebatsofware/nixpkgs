@@ -42,13 +42,18 @@ let
 in
 effectiveStdenv.mkDerivation (finalAttrs: {
   pname = "stable-diffusion-cpp";
-  version = "master-475-2efd199";
+  version = "master-558-8afbeb6";
+
+  outputs = [
+    "out"
+    "dev"
+  ];
 
   src = fetchFromGitHub {
     owner = "leejet";
     repo = "stable-diffusion.cpp";
-    rev = "master-475-2efd199";
-    hash = "sha256-ic0mnkKjgfL8k94ZCyqckjDR953NL7kBZ/tlIfLgZYo=";
+    rev = "master-558-8afbeb6";
+    hash = "sha256-YRgOBvTk/+AfXeZIzkhCBNsLTzoLZ35+0eqtw7TP5ME=";
     fetchSubmodules = true;
   };
 

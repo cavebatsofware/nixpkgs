@@ -8,39 +8,29 @@
   gitMinimal,
   cmake,
   boringssl,
-  runCommand,
   fetchFromGitHub,
   python3,
   nodejs,
 }:
-let
-  # boring-sys expects the static libraries in build/ instead of lib/
-  boringssl-wrapper = runCommand "boringssl-wrapper" { } ''
-    mkdir $out
-    cd $out
-    ln -s ${boringssl.out}/lib build
-    ln -s ${boringssl.dev}/include include
-  '';
-in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "libsignal-node";
-  version = "0.86.9";
+  version = "0.91.0";
 
   src = fetchFromGitHub {
     owner = "signalapp";
     repo = "libsignal";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-WQdaE9RqRn0/DldUC8FgLALagVGit0Cd3n90t0nEgUs=";
+    hash = "sha256-icmmQWWVCWg8dpNkQtLi3YWSxBrUwaGP4ezTDqC/0kc=";
   };
 
-  cargoHash = "sha256-2vIEBQmMBLppk4/t8mvR1n2K/YWUtUaxNl9SpUCNVM8=";
+  cargoHash = "sha256-NaFl9r4e08I3+/asek7VMA0yikxPR0MtBX9TnHaebSU=";
 
   npmRoot = "node";
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-npm-deps";
     inherit (finalAttrs) version src;
     sourceRoot = "${finalAttrs.src.name}/${finalAttrs.npmRoot}";
-    hash = "sha256-a7TNY+oe7bBLE5D3WYn75Su7RK/xl6UEkv7sosc/TBU=";
+    hash = "sha256-TTU7cfoS0h2fqHanSOCsF+dtkhBfaWApfOC3O4DGClo=";
   };
 
   nativeBuildInputs = [
@@ -53,8 +43,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
     npmHooks.npmConfigHook
     rustPlatform.bindgenHook
   ];
-  env.BORING_BSSL_PATH = "${boringssl-wrapper}";
-  env.NIX_LDFLAGS = if stdenv.hostPlatform.isDarwin then "-lc++" else "-lstdc++";
+
+  env = {
+    BORING_BSSL_INCLUDE_PATH = "${boringssl.dev}/include";
+    BORING_BSSL_PATH = boringssl;
+    NIX_LDFLAGS = if stdenv.hostPlatform.isDarwin then "-lc++" else "-lstdc++";
+  };
 
   patches = [
     # This is used to strip absolute paths of dependencies to avoid leaking info about build machine. Nix builders

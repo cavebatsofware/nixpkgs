@@ -6,6 +6,7 @@
   libuuid,
   libsodium,
   keyutils,
+  kmod,
   liburcu,
   zlib,
   libaio,
@@ -28,23 +29,26 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "bcachefs-tools";
-  version = "1.35.1";
+  version = "1.37.4";
 
   src = fetchFromGitHub {
     owner = "koverstreet";
     repo = "bcachefs-tools";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-1p2zbzQLza8w+hu+5OjPr+Lh6q6Kh9HdVxFkuCl2x8o=";
+    hash = "sha256-VlljE+xoKg6GryVuebUA1v9x2shMBUb7veCtD68MBJw=";
   };
 
   cargoDeps = rustPlatform.fetchCargoVendor {
     inherit (finalAttrs) src;
-    hash = "sha256-OlXkshfEXtY6fDBqhEJQhWhPjwQ5ofDIZ9IuchchKxk=";
+    hash = "sha256-t6ghsIRJFR2Kqism4tdizhnJ8qcE2ZZwH6c3nYogHlo=";
   };
 
   postPatch = ''
     substituteInPlace Makefile \
       --replace-fail "target/release/bcachefs" "target/${stdenv.hostPlatform.rust.rustcTargetSpec}/release/bcachefs"
+
+    substituteInPlace src/commands/mount.rs \
+      --replace-fail 'std::process::Command::new("modprobe")' 'std::process::Command::new("${lib.getExe' kmod "modprobe"}")'
   '';
 
   nativeBuildInputs = [

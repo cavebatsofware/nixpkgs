@@ -4,15 +4,15 @@
   rustPlatform,
 }:
 
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "vivid";
-  version = "0.10.1";
+  version = "0.11.0";
 
   src = fetchFromGitHub {
     owner = "sharkdp";
     repo = "vivid";
-    rev = "v${version}";
-    hash = "sha256-mxBBfezaMM2dfiXK/s+Htr+i5GJP1xVSXzkmYxEuwNs=";
+    rev = "v${finalAttrs.version}";
+    hash = "sha256-963rJz0ZsWnKQx8tO1Y65RHAW/oZnF4A5XKneP0PyBM=";
   };
 
   cargoHash = "sha256-oP5/G/PSkwn4JruLQOGtM8M2uPt4Q88bU3kNmXUK4JE=";
@@ -28,4 +28,4 @@ rustPlatform.buildRustPackage rec {
     platforms = lib.platforms.unix;
     mainProgram = "vivid";
   };
-}
+})

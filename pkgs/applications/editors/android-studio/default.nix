@@ -16,16 +16,19 @@ let
       inherit tiling_wm;
     };
   stableVersion = {
-    version = "2025.2.2.8"; # "Android Studio Otter 2 Feature Drop | 2025.2.2 Patch 1"
-    sha256Hash = "sha256-xs9ABQ9f8/gtxcoiZkf/xEtmTOj6rb4Ty+w70/+C4Ss=";
+    version = "2025.3.3.6"; # "Android Studio Panda 3 | 2025.3.3"
+    sha256Hash = "sha256-NBrA/BfbyYfQUw4M+zJxJUgFM9ZzOoifITdja+zUhqU=";
+    url = "https://edgedl.me.gvt1.com/android/studio/ide-zips/2025.3.3.6/android-studio-panda3-linux.tar.gz";
   };
   betaVersion = {
-    version = "2025.2.3.8"; # "Android Studio Otter 3 Feature Drop | 2025.2.3 RC 3"
-    sha256Hash = "sha256-KHvWVIxNzwdgl9kdqXD5Cpvz58r8pWs2VRyPV3VrJH0=";
+    version = "2025.3.3.5"; # "Android Studio Panda 3 | 2025.3.3 RC 1"
+    sha256Hash = "sha256-lKpFKw2Oq7OlDrPjFJhMH3aQsJO7TeOKy7HGUCE0B1U=";
+    url = "https://edgedl.me.gvt1.com/android/studio/ide-zips/2025.3.3.5/android-studio-panda3-rc1-linux.tar.gz";
   };
   latestVersion = {
-    version = "2025.3.1.4"; # "Android Studio Panda 1 | 2025.3.1 Canary 4"
-    sha256Hash = "sha256-5ymB/HKSmi32AWV39+HYmfY11frkNxf2dq8Ld4f9qfA=";
+    version = "2025.3.4.3"; # "Android Studio Panda 4 | 2025.3.4 Canary 3"
+    sha256Hash = "sha256-8fqHdU6IPuRmcJeCZQOqUPgfild9k98sLnN77dl2Hs8=";
+    url = "https://edgedl.me.gvt1.com/android/studio/ide-zips/2025.3.4.3/android-studio-panda4-canary3-linux.tar.gz";
   };
 in
 {

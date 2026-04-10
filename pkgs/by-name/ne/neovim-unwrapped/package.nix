@@ -5,7 +5,8 @@
   cmake,
   gettext,
   libuv,
-  lua,
+  lua5_1,
+  luajit,
   pkg-config,
   unibilium,
   utf8proc,
@@ -25,6 +26,11 @@
   fish ? null,
   python3 ? null,
 }:
+
+let
+  lua = if lib.meta.availableOn stdenv.hostPlatform luajit then luajit else lua5_1;
+in
+
 stdenv.mkDerivation (
   finalAttrs:
   let
@@ -95,7 +101,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "neovim-unwrapped";
-    version = "0.11.5";
+    version = "0.12.1";
 
     __structuredAttrs = true;
 
@@ -103,7 +109,7 @@ stdenv.mkDerivation (
       owner = "neovim";
       repo = "neovim";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-OsvLB9kynCbQ8PDQ2VQ+L56iy7pZ0ZP69J2cEG8Ad8A=";
+      hash = "sha256-cbFM5TKGmhEDsdhMvGzMyn0Js0MJwdMwXDkzQcdw/TM=";
     };
 
     strictDeps = true;
@@ -117,18 +123,31 @@ stdenv.mkDerivation (
 
     inherit lua;
     treesitter-parsers =
-      treesitter-parsers
-      // {
-        markdown = treesitter-parsers.markdown // {
-          location = "tree-sitter-markdown";
-        };
-      }
-      // {
-        markdown_inline = treesitter-parsers.markdown // {
-          language = "markdown_inline";
-          location = "tree-sitter-markdown-inline";
-        };
-      };
+      lib.mapAttrs
+        (
+          language: grammar:
+          tree-sitter.buildGrammar {
+            inherit (grammar) src;
+            version = "neovim-${finalAttrs.version}";
+            language = grammar.language or language;
+            location = grammar.location or null;
+          }
+        )
+        (
+          treesitter-parsers
+
+          // {
+            markdown = treesitter-parsers.markdown // {
+              location = "tree-sitter-markdown";
+            };
+          }
+          // {
+            markdown_inline = treesitter-parsers.markdown // {
+              language = "markdown_inline";
+              location = "tree-sitter-markdown-inline";
+            };
+          }
+        );
 
     buildInputs = [
       libuv
@@ -220,14 +239,7 @@ stdenv.mkDerivation (
     + lib.concatStrings (
       lib.mapAttrsToList (language: grammar: ''
         ln -s \
-          ${
-            tree-sitter.buildGrammar {
-              inherit (grammar) src;
-              version = "neovim-${finalAttrs.version}";
-              language = grammar.language or language;
-              location = grammar.location or null;
-            }
-          }/parser \
+          ${grammar}/parser \
           $out/lib/nvim/parser/${language}.so
       '') finalAttrs.treesitter-parsers
     );

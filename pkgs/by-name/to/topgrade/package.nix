@@ -6,18 +6,18 @@
   installShellFiles,
 }:
 
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "topgrade";
-  version = "16.8.0";
+  version = "17.2.0";
 
   src = fetchFromGitHub {
     owner = "topgrade-rs";
     repo = "topgrade";
-    tag = "v${version}";
-    hash = "sha256-6TimSkPxmDvXAPDlLbPYpnXg20dTbBKzv1Lj0tI973U=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-Q8Cji21uJy/Az8FQiSQJ4nv+HRsqIVTsYoO9q3jv/as=";
   };
 
-  cargoHash = "sha256-DehLOUrqxGvlNw/12PyDOtyGuZThx/jqqjmKltqk7Ck=";
+  cargoHash = "sha256-/Ezf6ntvomhGsPpWPIA+ebkW+4i6BVvuIHNVbZSHow8=";
 
   nativeBuildInputs = [
     installShellFiles
@@ -43,7 +43,7 @@ rustPlatform.buildRustPackage rec {
   meta = {
     description = "Upgrade all the things";
     homepage = "https://github.com/topgrade-rs/topgrade";
-    changelog = "https://github.com/topgrade-rs/topgrade/releases/tag/v${version}";
+    changelog = "https://github.com/topgrade-rs/topgrade/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [
       SuperSandro2000
@@ -51,4 +51,4 @@ rustPlatform.buildRustPackage rec {
     ];
     mainProgram = "topgrade";
   };
-}
+})

@@ -1180,12 +1180,19 @@ rec {
       };
     };
 
+  optionDeclaration = mkOptionType {
+    name = "optionDeclaration";
+    description = "option declaration";
+    descriptionClass = "noun";
+    check = opt: isType "option" opt && !(opt ? value);
+  };
+
   # The type of a type!
   optionType = mkOptionType {
     name = "optionType";
     description = "optionType";
     descriptionClass = "noun";
-    check = value: value._type or null == "option-type";
+    check = isType "option-type";
     merge =
       loc: defs:
       if length defs == 1 then
@@ -1412,7 +1419,7 @@ rec {
         else if builtins.isBool v then
           boolToString v
         else
-          ''<${builtins.typeOf v}>'';
+          "<${builtins.typeOf v}>";
     in
     mkOptionType rec {
       name = "enum";

@@ -4,18 +4,18 @@
   rustPlatform,
 }:
 
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "tagref";
-  version = "1.10.0";
+  version = "1.11.0";
 
   src = fetchFromGitHub {
     owner = "stepchowfun";
     repo = "tagref";
-    rev = "v${version}";
-    sha256 = "sha256-ANQxW5Qznu2JbiazFElB1sxpX4BwPgk6SVGgYpJ6DUw=";
+    rev = "v${finalAttrs.version}";
+    sha256 = "sha256-DjxRK3Ih58vzxvPM0YmRkFU4fogiFsI/WrdHyAonQ7A=";
   };
 
-  cargoHash = "sha256-XQ0/J8o9yqEGWH1Cy5VDkpsK60SS6JhYxMNsI08uI6U=";
+  cargoHash = "sha256-Pj86GQoIAf20F7z18Er7frX0aRacGNDQpeyUdr5kwz4=";
 
   meta = {
     description = "Manage cross-references in your code";
@@ -25,4 +25,4 @@ rustPlatform.buildRustPackage rec {
     platforms = lib.platforms.unix;
     mainProgram = "tagref";
   };
-}
+})

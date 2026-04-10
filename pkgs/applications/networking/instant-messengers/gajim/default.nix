@@ -43,14 +43,14 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "gajim";
-  version = "2.4.2";
+  version = "2.4.5";
 
   src = fetchFromGitLab {
     domain = "dev.gajim.org";
     owner = "gajim";
     repo = "gajim";
     tag = version;
-    hash = "sha256-VBo0+8lOXWbi3a9FT0qcEkyoxzVAm+QLrBtHmRjUHbg=";
+    hash = "sha256-5daPMlC2Ejfi5UXsRLaLWwEZHHEC0szbfkqavIisoUQ=";
   };
 
   pyproject = true;
@@ -148,6 +148,7 @@ python3.pkgs.buildPythonApplication rec {
     maintainers = with lib.maintainers; [
       raskin
       hlad
+      vbgl
     ];
     downloadPage = "http://gajim.org/download/";
     platforms = lib.platforms.linux;

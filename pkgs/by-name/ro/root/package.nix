@@ -25,7 +25,10 @@
   llvm_20,
   lsof,
   lz4,
-  xorg,
+  libxpm,
+  libxft,
+  libxext,
+  libx11,
   xz,
   man,
   openssl,
@@ -51,7 +54,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "root";
-  version = "6.38.00";
+  version = "6.38.02";
 
   passthru = {
     tests = import ./tests { inherit callPackage; };
@@ -59,7 +62,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://root.cern.ch/download/root_v${finalAttrs.version}.source.tar.gz";
-    hash = "sha256-pEKUIsRg+DLN5RSlgN0gKx08luiRnCQ2PD1C+M9azNw=";
+    hash = "sha256-d9NNK8oOpyCs/UN5i8tdCaKFhAE7TQopEII8hn1L+kI=";
   };
 
   clad_src = fetchFromGitHub {
@@ -116,10 +119,10 @@ stdenv.mkDerivation (finalAttrs: {
   ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
     libGLU
     libGL
-    xorg.libX11
-    xorg.libXpm
-    xorg.libXft
-    xorg.libXext
+    libx11
+    libxpm
+    libxft
+    libxext
   ];
 
   preConfigure = ''

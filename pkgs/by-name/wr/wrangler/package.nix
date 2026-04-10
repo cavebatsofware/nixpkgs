@@ -11,7 +11,7 @@
   cacert,
   llvmPackages,
   musl,
-  xorg,
+  libx11,
   jq,
   moreutils,
   nix-update-script,
@@ -19,13 +19,13 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "wrangler";
-  version = "4.59.3";
+  version = "4.62.0";
 
   src = fetchFromGitHub {
     owner = "cloudflare";
     repo = "workers-sdk";
     rev = "wrangler@${finalAttrs.version}";
-    hash = "sha256-DKKngT58p8x+Qzl550468JDOQuymQmzPwkLL/iB7Aa4=";
+    hash = "sha256-o6ARRNObHtRqAD71j7L2HkpIalPwGWR+PyQQuHJBKZE=";
   };
 
   pnpmDeps = fetchPnpmDeps {
@@ -37,7 +37,7 @@ stdenv.mkDerivation (finalAttrs: {
       ;
     pnpm = pnpm_9;
     fetcherVersion = 2;
-    hash = "sha256-r3J4xNZJlWmNtnpLfx/eKK3TDKcrjZmR7oxp6TDuwxg=";
+    hash = "sha256-Crtjchu17OFPWqd3L0AYCpA76YRN4jJc+vLVLo1WLe4=";
   };
   # pnpm packageManager version in workers-sdk root package.json may not match nixpkgs
   postPatch = ''
@@ -56,7 +56,7 @@ stdenv.mkDerivation (finalAttrs: {
   ]
   ++ lib.optionals (stdenv.hostPlatform.isLinux) [
     musl # not used, but requires extra work to remove
-    xorg.libX11 # for the clipboardy package
+    libx11 # for the clipboardy package
   ];
 
   nativeBuildInputs = [

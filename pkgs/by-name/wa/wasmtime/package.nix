@@ -13,20 +13,20 @@
 }:
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "wasmtime";
-  version = "40.0.2";
+  version = "43.0.0";
 
   src = fetchFromGitHub {
     owner = "bytecodealliance";
     repo = "wasmtime";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-4y9WpCdyuF/Tp2k/1d5rZxwYunWNdeibEsFgHcBC52Q=";
+    hash = "sha256-zCU3CtqbqagSWQZULvTxCRwK709ZfyL9PGtjJpNAYQE=";
     fetchSubmodules = true;
   };
 
   # Disable cargo-auditable until https://github.com/rust-secure-code/cargo-auditable/issues/124 is solved.
   auditable = false;
 
-  cargoHash = "sha256-aTPgnuBvOIqg1+Sa2ZLdMTLujm8dKGK5xpZ3qHpr3f8=";
+  cargoHash = "sha256-WJz7J9FHGRqni889o2omkC1K+rwZ8iM6SarT1nd1p0Q=";
   cargoBuildFlags = [
     "--package"
     "wasmtime-cli"

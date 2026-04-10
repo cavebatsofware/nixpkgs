@@ -6,7 +6,7 @@
   autoPatchelfHook,
 
   # buildInputs
-  oneDNN,
+  onednn,
   re2,
 
   # dependencies
@@ -38,7 +38,7 @@ buildPythonPackage {
     chmod +w dist
   '';
 
-  env = {
+  env = lib.optionalAttrs stdenv.hostPlatform.isLinux {
     NIX_LDFLAGS = "-z,noexecstack";
   };
 
@@ -53,7 +53,7 @@ buildPythonPackage {
 
   # Libraries are not linked correctly.
   buildInputs = [
-    oneDNN
+    onednn
     re2
     onnxruntime.protobuf
 

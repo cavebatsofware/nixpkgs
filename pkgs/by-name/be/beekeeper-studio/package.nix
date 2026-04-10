@@ -20,7 +20,13 @@
   gdk-pixbuf,
   nss,
   nspr,
-  xorg,
+  libxrandr,
+  libxfixes,
+  libxext,
+  libxdamage,
+  libxcomposite,
+  libx11,
+  libxcb,
   alsa-lib,
   expat,
   libxkbcommon,
@@ -33,7 +39,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "beekeeper-studio";
-  version = "5.5.3";
+  version = "5.6.4";
 
   src =
     let
@@ -48,10 +54,10 @@ stdenv.mkDerivation (finalAttrs: {
     fetchurl {
       url = "https://github.com/beekeeper-studio/beekeeper-studio/releases/download/v${finalAttrs.version}/${asset}";
       hash = selectSystem {
-        x86_64-linux = "sha256-zbOePN975TWp7zo3XagKYPjHPQiz3r6ui2fPfNEboGs=";
-        aarch64-linux = "sha256-AoyaHBKO0gHgbq51D+OMH7SyUVnq2IjH4FIbeNepFHw=";
-        x86_64-darwin = "sha256-GzK9fmhW86IKER1IPsLNDwyz03rKuqCTO+hcPR/2QnM=";
-        aarch64-darwin = "sha256-pRBkgzp2w92/ACQaqpruwRtbfvg7f+nNE5rZ4YuQREc=";
+        x86_64-linux = "sha256-HAWT2JSM+H4iDvfFAAYTRXWszmyHnxd/iik2f0kfVoY=";
+        aarch64-linux = "sha256-GZqoIVg/RGheSrbViGJF+U9becDml1TNQisZB+cqO4g=";
+        x86_64-darwin = "sha256-KqW4tYrxl0fwfiLmGLyjkZHxpHm5CGE5z60Ml+X9W/A=";
+        aarch64-darwin = "sha256-/Gn+64aXBfpdii/TL4rbUKL2TvibYDDIX08B3/wfOlQ=";
       };
     };
 
@@ -65,13 +71,13 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
     (lib.getLib stdenv.cc.cc)
-    xorg.libX11
-    xorg.libXcomposite
-    xorg.libXdamage
-    xorg.libXext
-    xorg.libXfixes
-    xorg.libXrandr
-    xorg.libxcb
+    libx11
+    libxcomposite
+    libxdamage
+    libxext
+    libxfixes
+    libxrandr
+    libxcb
     libxkbcommon
     glibc
     gcc
@@ -154,6 +160,5 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-darwin"
       "x86_64-darwin"
     ];
-    knownVulnerabilities = [ "Electron version 32 is EOL" ];
   };
 })

@@ -23,7 +23,7 @@
   libGL,
   libGLU,
   libpng,
-  libX11,
+  libx11,
   libxml2,
   protobuf,
   xvfb-run,
@@ -60,7 +60,7 @@ let
           extraBuildInputs = lib.optionals (!dedicatedServer) [
             libGL
             libGLU
-            libX11
+            libx11
             libpng
             SDL
             SDL_image
@@ -87,12 +87,18 @@ let
             freetype
             libGL
             libGLU
-            libX11
+            libx11
             SDL2
             SDL2_image
             SDL2_mixer
           ];
           extraNativeBuildInputs = [ bison ];
+          # `label()` was removed in protobuf 34
+          # <https://github.com/protocolbuffers/protobuf/commit/b76faa921fdd244f374c7be0bddd4050fc42c292>
+          postPatch = ''
+            substituteInPlace src/network/nProtoBuf.cpp \
+              --replace-fail 'field->label() == FieldDescriptor::LABEL_REPEATED' 'field->is_repeated()'
+          '';
         };
 
       # https://gitlab.com/armagetronad/armagetronad/-/commits/hack-0.2.8-sty+ct+ap/?ref_type=heads
@@ -107,7 +113,7 @@ let
           extraBuildInputs = lib.optionals (!dedicatedServer) [
             libGL
             libGLU
-            libX11
+            libx11
             libpng
             SDL
             SDL_image
@@ -144,6 +150,8 @@ let
     stdenv.mkDerivation {
       pname = mainProgram;
       inherit (resolvedParams) version src;
+
+      postPatch = resolvedParams.postPatch or "";
 
       # Build works fine; install has a race.
       enableParallelBuilding = true;

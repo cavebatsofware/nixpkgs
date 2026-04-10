@@ -8,18 +8,18 @@
   gh,
 }:
 
-buildGoModule rec {
+buildGoModule (finalAttrs: {
   pname = "gh";
-  version = "2.86.0";
+  version = "2.89.0";
 
   src = fetchFromGitHub {
     owner = "cli";
     repo = "cli";
-    tag = "v${version}";
-    hash = "sha256-+MPhDgXIVfYGp5ALI5GjRoeLRRUtNgpzUawxoqR76iE=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-SiPcji8CbJd6GwWmsIFWq3874Mr9/VggOATX9yKYjow=";
   };
 
-  vendorHash = "sha256-pBHEqMgEoR3sWNbQjGBNso7WLP9Rz2gu89Bzu+7jz5c=";
+  vendorHash = "sha256-Sko+jTkGUTiR66Mv/p5INv/CLID1EK2v9fY0GfIeckg=";
 
   nativeBuildInputs = [ installShellFiles ];
 
@@ -27,7 +27,7 @@ buildGoModule rec {
   # We pass "nixpkgs" for build.Date to avoid `gh --version` reporting a very old date.
   buildPhase = ''
     runHook preBuild
-    make GO_LDFLAGS="-s -w -X github.com/cli/cli/v${lib.versions.major version}/internal/build.Date=nixpkgs" GH_VERSION=${version} bin/gh ${lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) "manpages"}
+    make GO_LDFLAGS="-s -w -X github.com/cli/cli/v${lib.versions.major finalAttrs.version}/internal/build.Date=nixpkgs" GH_VERSION=${finalAttrs.version} bin/gh ${lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) "manpages"}
     runHook postBuild
   '';
 
@@ -57,12 +57,13 @@ buildGoModule rec {
   meta = {
     description = "GitHub CLI tool";
     homepage = "https://cli.github.com/";
-    changelog = "https://github.com/cli/cli/releases/tag/v${version}";
+    changelog = "https://github.com/cli/cli/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.mit;
     mainProgram = "gh";
     maintainers = with lib.maintainers; [
       mdaniels5757
       zowoq
+      savtrip
     ];
   };
-}
+})

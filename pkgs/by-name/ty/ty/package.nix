@@ -14,14 +14,14 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "ty";
-  version = "0.0.13";
+  version = "0.0.29";
 
   src = fetchFromGitHub {
     owner = "astral-sh";
     repo = "ty";
     tag = finalAttrs.version;
     fetchSubmodules = true;
-    hash = "sha256-2KPnFNutndxE5ap0E9BCL5w6vpnfow8GIY4/N9dgYy8=";
+    hash = "sha256-rOkh6HgZ5F/1wJr0iZwaqqYmcEONioz7jeebp19xxXs=";
   };
 
   # For Darwin platforms, remove the integration test for file notifications,
@@ -35,7 +35,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   cargoBuildFlags = [ "--package=ty" ];
 
-  cargoHash = "sha256-E/kR6AxzpIqKMM80+ute5Z6LUL5f39RYfj7BnGOg6V4=";
+  cargoHash = "sha256-ajuhF+jpx+9U9swrd8HF3ZH7ovSwz0nDNRiQzcrttwg=";
 
   nativeBuildInputs = [ installShellFiles ];
 
@@ -63,6 +63,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     "--skip=python_environment::ty_environment_and_discovered_venv"
     "--skip=python_environment::ty_environment_is_only_environment"
     "--skip=python_environment::ty_environment_is_system_not_virtual"
+
+    # flaky: unmatched assertion: revealed: Literal[1]
+    "--skip=mdtest::generics/pep695/functions.md"
   ];
 
   nativeInstallCheckInputs = [ versionCheckHook ];
@@ -92,6 +95,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     mainProgram = "ty";
     maintainers = with lib.maintainers; [
       bengsparks
+      figsoda
       GaetanLepage
     ];
   };

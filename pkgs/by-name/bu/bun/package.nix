@@ -17,7 +17,7 @@
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
-  version = "1.3.6";
+  version = "1.3.11";
   pname = "bun";
 
   src =
@@ -71,35 +71,29 @@ stdenvNoCC.mkDerivation (finalAttrs: {
           && !(stdenvNoCC.hostPlatform.isDarwin && stdenvNoCC.hostPlatform.isx86_64)
         )
         ''
-          completions_dir=$(mktemp -d)
-
-          SHELL="bash" $out/bin/bun completions $completions_dir
-          SHELL="zsh" $out/bin/bun completions $completions_dir
-          SHELL="fish" $out/bin/bun completions $completions_dir
-
-          installShellCompletion --name bun \
-            --bash $completions_dir/bun.completion.bash \
-            --zsh $completions_dir/_bun \
-            --fish $completions_dir/bun.fish
+          installShellCompletion --cmd bun \
+            --bash <(SHELL="bash" $out/bin/bun completions) \
+            --zsh <(SHELL="zsh" $out/bin/bun completions) \
+            --fish <(SHELL="fish" $out/bin/bun completions)
         '';
 
   passthru = {
     sources = {
       "aarch64-darwin" = fetchurl {
         url = "https://github.com/oven-sh/bun/releases/download/bun-v${finalAttrs.version}/bun-darwin-aarch64.zip";
-        hash = "sha256-KvHshDd1mrBbOw6kIf6eIubHBctMsHUcMmmCZC2s6Po=";
+        hash = "sha256-b1o0Z+2crsR5W/eM1HZQfZ+HDH1XuGyUX8szgSZ3L/w=";
       };
       "aarch64-linux" = fetchurl {
         url = "https://github.com/oven-sh/bun/releases/download/bun-v${finalAttrs.version}/bun-linux-aarch64.zip";
-        hash = "sha256-Wv0Ss2a6LYKXJFzCnAOUFjNN2HIVLB2wLlyKqMZulrE=";
+        hash = "sha256-0TlE2hKlPsx0v2pyC9HQTEVVwDjf5CI2U1anvkdpH98=";
       };
       "x86_64-darwin" = fetchurl {
         url = "https://github.com/oven-sh/bun/releases/download/bun-v${finalAttrs.version}/bun-darwin-x64-baseline.zip";
-        hash = "sha256-stiZTUz3BkE2bWm4dCC4BdHZhPTqfhajUt8VaUlHT6U=";
+        hash = "sha256-+2c5sIv1RVDtqnyCTNWy3KRbagav70CEQwh6YxBfb40=";
       };
       "x86_64-linux" = fetchurl {
         url = "https://github.com/oven-sh/bun/releases/download/bun-v${finalAttrs.version}/bun-linux-x64.zip";
-        hash = "sha256-m6mNITRVDWaQh1sjpPXEjnS3yyZ+jMG49SYFkhxsEe8=";
+        hash = "sha256-hhG6k1r4hvBabzh0ChUWAybBXl1dB63vlmEwtEk2B+0=";
       };
     };
     updateScript = writeShellScript "update-bun" ''

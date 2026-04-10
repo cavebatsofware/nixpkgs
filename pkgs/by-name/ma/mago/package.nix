@@ -9,17 +9,17 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "mago";
-  version = "1.0.3";
+  version = "1.18.1";
 
   src = fetchFromGitHub {
     owner = "carthage-software";
     repo = "mago";
     tag = finalAttrs.version;
-    hash = "sha256-i8iC16TFT2zqgJeCcJICcbmPr2kAOTZHvZvAXtHwQQw=";
+    hash = "sha256-Y18ab4Xh/R54H91sWVqKVDxc1OmVrQh/LB2eMmIjs04=";
     forceFetchGit = true; # Does not download all files otherwise
   };
 
-  cargoHash = "sha256-EGtUvFZw16Rxj8gPQLBapJpKUgRjawZQmn1sRD5gU1E=";
+  cargoHash = "sha256-Jq/11J3diOe/z0W6smnmmbdeFdX1vOO3sn+KZ/Z/6M8=";
 
   env = {
     # Get openssl-sys to use pkg-config
@@ -38,7 +38,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
     description = "Toolchain for PHP that aims to provide a set of tools to help developers write better code";
     homepage = "https://github.com/carthage-software/mago";
     license = lib.licenses.mit;
-    maintainers = [ ];
+    maintainers = with lib.maintainers; [ hythera ];
     mainProgram = "mago";
   };
 })
