@@ -346,13 +346,14 @@ stdenv.mkDerivation (
       runHook postInstall
     '';
 
-    preFixup = ''
+    # Linux-only: gappsWrapperArgs comes from wrapGAppsHook3 which is only
+    # in nativeBuildInputs on Linux (see above), and the PATH block below
+    # references glibc.bin whose meta.platforms excludes Darwin. Without
+    # this guard, evaluating vscode on Darwin fails forcing glibc.bin.
+    preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
       gappsWrapperArgs+=(
-          ${
-            # we cannot use runtimeDependencies otherwise libdbusmenu do not work on kde
-            lib.optionalString stdenv.hostPlatform.isLinux
-              "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libdbusmenu ]}"
-          }
+          # we cannot use runtimeDependencies otherwise libdbusmenu do not work on kde
+          --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ libdbusmenu ]}
         --prefix PATH : ${
           lib.makeBinPath [
             # for moving files to trash
