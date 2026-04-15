@@ -2,10 +2,13 @@
 
 ## Conventions for adding new extensions
 
-* Extensions are named in the **lowercase** version of the extension's unique identifier which is found on the extension's marketplace page, and is the name under which the extension is installed by VSCode under `~/.vscode`.
+* Extensions are named in the **lowercase** version of the extension's unique identifier which is found on the extension's
+  marketplace page, and is the name under which the extension is installed by VSCode under `~/.vscode`.
   Extension location should be: ${lib.strings.toLower mktplcRef.publisher}.${lib.string.toLower mktplcRef.name}
 
-* When adding a new extension, place its definition in a `default.nix` file in a directory with the extension's ID (e.g. `publisher.extension-name/default.nix`) and refer to it in `./default.nix`, e.g. `publisher.extension-name = callPackage ./publisher.extension-name { };`.
+* When adding a new extension, place its definition in a `default.nix` file in a directory with the extension's ID
+  (e.g. `publisher.extension-name/default.nix`) and refer to it in `./default.nix`,
+  e.g. `publisher.extension-name = callPackage ./publisher.extension-name { };`.
 
 * Use `nix-shell --run treefmt` to format the VSCode extensions.
 
@@ -14,6 +17,12 @@
 * Avoid [unnecessary](https://nix.dev/guides/best-practices.html#with-scopes) use of `with`, particularly `nested with`.
 
 * Use `hash` instead of `sha256`.
+
+* Add `signatureHash` to enable cryptographic signature verification (optional). Use `--with-signature` flag with the update
+  script to fetch it automatically. For multi-platform extensions with per-system `hash` values, the update script fetches a
+  `signatureHash` per platform and inserts it into each per-system block. `mktplcRef` must surface it,
+  e.g. `signatureHash = extInfo.signatureHash or "";` (tolerates the pre-populated state) or `inherit (extInfo) signatureHash;`
+  once every per-system block has one.
 
 * On `meta` field:
   - add a `changelog`.
