@@ -20,6 +20,17 @@ let
     };
     meta.license = lib.licenses.mit;
   } ./unpack-vsix-setup-hook.sh;
+
+  verifyVsixSignatureSetupHook = makeSetupHook {
+    name = "verify-vsix-signature-setup-hook";
+    substitutions = {
+      vsceSign =
+        if stdenv.hostPlatform.isDarwin then
+          "${vscode}/Applications/${vscode.longName}.app/Contents/Resources/app/node_modules/@vscode/vsce-sign/bin/vsce-sign"
+        else
+          "${vscode}/lib/vscode/resources/app/node_modules/@vscode/vsce-sign/bin/vsce-sign";
+    };
+  } ./verify-vsix-signature-setup-hook.sh;
   buildVscodeExtension = lib.extendMkDerivation {
     constructDrv = stdenv.mkDerivation;
     excludeDrvArgNames = [
@@ -73,7 +84,33 @@ let
         # This cannot be removed, it is used by some extensions.
         installPrefix = "share/vscode/extensions/${vscodeExtUniqueId}";
 
-        nativeBuildInputs = [ unpackVsixSetupHook ] ++ nativeBuildInputs;
+        nativeBuildInputs = [
+          unpackVsixSetupHook
+        ]
+        ++ lib.optional (
+          (finalAttrs.signatureArchive or null) != null
+          && !(finalAttrs.allowMissingVsceSign or false)
+          && vscode.hasVsceSign
+        ) verifyVsixSignatureSetupHook
+        ++ nativeBuildInputs;
+
+        # vsce-sign validates Microsoft's certificate chain via Apple's
+        # Security.framework, which reads the system keychain and MDS store.
+        # Grant those reads under Darwin's relaxed sandbox.
+        sandboxProfile =
+          lib.optionalString
+            (
+              (finalAttrs.signatureArchive or null) != null
+              && stdenv.hostPlatform.isDarwin
+              && !(finalAttrs.allowMissingVsceSign or false)
+              && vscode.hasVsceSign
+            )
+            ''
+              (allow file-read*
+                (literal "/Library/Keychains/System.keychain")
+                (literal "/private/var/db/mds/system/mdsDirectory.db")
+                (literal "/private/var/db/mds/system/mdsObject.db"))
+            '';
 
         installPhase =
           args.installPhase or ''
@@ -87,8 +124,35 @@ let
       };
   };
 
+  mktplcAssetBaseUrl =
+    {
+      publisher,
+      name,
+      version,
+      ...
+    }:
+    "https://${publisher}.gallery.vsassets.io/_apis/public/gallery/publisher/${publisher}/extension/${name}/${version}/assetbyname";
+
   fetchVsixFromVscodeMarketplace =
     mktplcExtRef: fetchurl (import ./mktplcExtRefToFetchArgs.nix mktplcExtRef);
+
+  # Fetch signature archive for cryptographic verification
+  fetchSignatureFromVscodeMarketplace =
+    mktplcExtRef:
+    let
+      inherit (mktplcExtRef) publisher name;
+      arch = mktplcExtRef.arch or "";
+      archurl = if arch == "" then "" else "?targetPlatform=${arch}";
+      signatureHash = mktplcExtRef.signatureHash or "";
+    in
+    if signatureHash != "" then
+      fetchurl {
+        url = "${mktplcAssetBaseUrl mktplcExtRef}/Microsoft.VisualStudio.Services.VsixSignature${archurl}";
+        name = "${publisher}-${name}.sigzip";
+        hash = signatureHash;
+      }
+    else
+      null;
 
   buildVscodeMarketplaceExtension = lib.extendMkDerivation {
     constructDrv = buildVscodeExtension;
@@ -114,6 +178,7 @@ let
         vscodeExtPublisher = mktplcRef.publisher;
         vscodeExtName = mktplcRef.name;
         vscodeExtUniqueId = "${mktplcRef.publisher}.${mktplcRef.name}";
+        signatureArchive = fetchSignatureFromVscodeMarketplace mktplcRef;
       };
   };
 
@@ -124,6 +189,7 @@ let
     "sha256"
     "hash"
     "arch"
+    "signatureHash"
   ];
 
   mktplcExtRefToExtDrv =

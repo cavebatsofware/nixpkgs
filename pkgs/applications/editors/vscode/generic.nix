@@ -194,6 +194,7 @@ stdenv.mkDerivation (
       inherit
         executableName
         iconName
+        hasVsceSign
         longName
         tests
         updateScript
