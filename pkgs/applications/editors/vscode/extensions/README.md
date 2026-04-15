@@ -24,6 +24,18 @@
   e.g. `signatureHash = extInfo.signatureHash or "";` (tolerates the pre-populated state) or `inherit (extInfo) signatureHash;`
   once every per-system block has one.
 
+  Signature verification runs only when the `vscode` package exposes `passthru.hasVsceSign = true` (Microsoft's build does;
+  `vscodium` does not because it ships without the `vsce-sign` binary). Users who overlay `vscode = vscodium` — or any other
+  variant without `vsce-sign` — get verification automatically skipped for all signed extensions.
+
+  For per-extension opt-out (e.g., under Darwin's strict sandbox where the verifier cannot access the system keychain),
+  set `allowMissingVsceSign = true` via `.override`:
+  ```nix
+  (pkgs.vscode-extensions.publisher.extension.override { allowMissingVsceSign = true; })
+  ```
+  Extensions that wish to support this opt-out must accept `allowMissingVsceSign ? false` in their function signature and
+  `inherit` it into `buildVscodeMarketplaceExtension`.
+
 * On `meta` field:
   - add a `changelog`.
   - `description` should mention it is a Visual Studio Code extension.

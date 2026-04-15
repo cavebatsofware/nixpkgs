@@ -3,9 +3,12 @@
   claude-code,
   vscode-utils,
   vscode-extension-update-script,
+  allowMissingVsceSign ? false,
 }:
 
 vscode-utils.buildVscodeMarketplaceExtension {
+  inherit allowMissingVsceSign;
+
   mktplcRef = {
     name = "claude-code";
     publisher = "anthropic";

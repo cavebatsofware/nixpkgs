@@ -24,7 +24,7 @@ let
     substitutions = {
       vsceSign =
         if stdenv.hostPlatform.isDarwin then
-          "${vscode}/Applications/Visual Studio Code.app/Contents/Resources/app/node_modules/@vscode/vsce-sign/bin/vsce-sign"
+          "${vscode}/Applications/${vscode.longName}.app/Contents/Resources/app/node_modules/@vscode/vsce-sign/bin/vsce-sign"
         else
           "${vscode}/lib/vscode/resources/app/node_modules/@vscode/vsce-sign/bin/vsce-sign";
     };
@@ -47,9 +47,10 @@ let
         vscodeExtUniqueId,
         # Pre-fetched signature archive for cryptographic verification
         signatureArchive ? null,
-        # Opt-in escape hatch: when true, a missing vsce-sign binary only warns
-        # instead of failing the build. Does NOT suppress real signature failures
-        # (vsce-sign exit codes 30/31/35/36/37) — only the "verifier not found" case.
+        # Per-extension escape hatch: when true, the signature hook is
+        # not attached, so the build succeeds even under strict sandbox.
+        # The same effect is applied automatically when vscode.hasVsceSign
+        # is false (e.g., vscodium).
         allowMissingVsceSign ? false,
         configurePhase ? ''
           runHook preConfigure
@@ -93,26 +94,31 @@ let
         nativeBuildInputs = [
           unpackVsixSetupHook
         ]
-        ++ lib.optional (signatureArchive != null) verifyVsixSignatureSetupHook
+        ++ lib.optional (
+          signatureArchive != null && !allowMissingVsceSign && vscode.hasVsceSign
+        ) verifyVsixSignatureSetupHook
         ++ nativeBuildInputs;
 
-        # Pass signature archive path and override flag to the verification hook
-        inherit signatureArchive allowMissingVsceSign;
+        # Pass signature archive path to the verification hook
+        inherit signatureArchive;
 
         # vsce-sign validates Microsoft's certificate chain via Apple's
         # Security.framework, which reads the system keychain and MDS store.
-        # Grant those reads under Darwin's relaxed sandbox (the default).
-        # Mirrors the allowance in pkgs/development/web/nodejs/nodejs.nix.
-        # Nix rejects derivations carrying a sandboxProfile under strict
-        # sandbox, so we drop it when the user has explicitly opted into the
-        # missing-verifier escape hatch — letting the build evaluate in strict
-        # mode at the cost of verification (the hook will warn and skip).
-        sandboxProfile = lib.optionalString (signatureArchive != null && stdenv.hostPlatform.isDarwin && !allowMissingVsceSign) ''
-          (allow file-read*
-            (literal "/Library/Keychains/System.keychain")
-            (literal "/private/var/db/mds/system/mdsDirectory.db")
-            (literal "/private/var/db/mds/system/mdsObject.db"))
-        '';
+        # Grant those reads under Darwin's relaxed sandbox.
+        sandboxProfile =
+          lib.optionalString
+            (
+              signatureArchive != null
+              && stdenv.hostPlatform.isDarwin
+              && !allowMissingVsceSign
+              && vscode.hasVsceSign
+            )
+            ''
+              (allow file-read*
+                (literal "/Library/Keychains/System.keychain")
+                (literal "/private/var/db/mds/system/mdsDirectory.db")
+                (literal "/private/var/db/mds/system/mdsObject.db"))
+            '';
 
         installPhase =
           args.installPhase or ''
