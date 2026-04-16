@@ -435,6 +435,25 @@ class VSCodeExtensionUpdater:
 
         return content[:brace_start] + new_block_text + content[block_end + 1:]
 
+    def _has_existing_signature_hash(self) -> bool:
+        """
+        Returns True if the extension's source file already declares a
+        `signatureHash` attribute. Used to auto-enable signature fetching.
+        """
+        if not self.override_filename:
+            return False
+        try:
+            content = Path(self.override_filename).read_text(encoding="utf-8")
+        except (FileNotFoundError, OSError):
+            return False
+        return bool(
+            re.search(
+                r'^\s*(?:signatureHash|"signatureHash")\s*=\s*"',
+                content,
+                re.MULTILINE,
+            )
+        )
+
     def update_signature_hash(
         self, signature_hash: str, nix_system: Optional[str] = None
     ) -> bool:
@@ -554,8 +573,14 @@ class VSCodeExtensionUpdater:
         for i, system in enumerate(self.nix_vscode_extension_platforms):
             version = self.new_version if i == 0 else "skip"
             self.run_nix_update(version, system)
-        # Fetch and add signature hash if requested. Fail on missing signature
-        # to ensure we don't end up with an unsigned update.
+        if not self.with_signature and self._has_existing_signature_hash():
+            logger.info(
+                "Detected existing signatureHash in source; "
+                "auto-fetching updated signature."
+            )
+            self.with_signature = True
+
+        # Fetch and add signature hash if requested
         if self.with_signature:
             logger.info("Fetching signature hash...")
             if self._has_platform_source():

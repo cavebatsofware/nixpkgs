@@ -23,9 +23,7 @@ vscode-utils.buildVscodeMarketplaceExtension {
     ln -s "${claude-code}/bin/claude" "$out/$installPrefix/resources/native-binary/claude"
   '';
 
-  passthru.updateScript = vscode-extension-update-script {
-    extraArgs = [ "--with-signature" ];
-  };
+  passthru.updateScript = vscode-extension-update-script { };
 
   meta = {
     description = "Harness the power of Claude Code without leaving your IDE";

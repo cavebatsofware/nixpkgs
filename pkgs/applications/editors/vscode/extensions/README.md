@@ -18,10 +18,10 @@
 
 * Use `hash` instead of `sha256`.
 
-* Add `signatureHash` to enable cryptographic signature verification (optional). Use `--with-signature` flag with the update
-  script to fetch it automatically. For multi-platform extensions with per-system `hash` values, the update script fetches a
-  `signatureHash` per platform and inserts it into each per-system block. `mktplcRef` must surface it,
-  e.g. `signatureHash = extInfo.signatureHash or "";` (tolerates the pre-populated state) or `inherit (extInfo) signatureHash;`
+* Add `signatureHash` to enable automatic cryptographic signature verification (optional) or pass `--with-signature` to the
+  update script to populate it. For multi-platform extensions with per-system `hash` values, the update script fetches a\
+  `signatureHash` per platform and inserts it into each per-system block. `mktplcRef` must surface it, e.g.
+  `signatureHash = extInfo.signatureHash or "";` (tolerates the pre-populated state) or `inherit (extInfo) signatureHash;`
   once every per-system block has one.
 
   Signature verification runs only when the `vscode` package exposes `passthru.hasVsceSign = true` (Microsoft's build does;
